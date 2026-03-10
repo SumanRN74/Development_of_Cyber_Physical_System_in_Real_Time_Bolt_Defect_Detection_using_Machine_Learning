@@ -1,0 +1,19 @@
+# Web Framework
+flask==3.0.0
+
+# Computer Vision and Image Processing
+opencv-python==4.8.1.78
+pillow==10.1.0
+numpy==1.24.4
+
+# AI/ML Framework
+ultralytics==8.0.206
+torch==2.1.1
+torchvision==0.16.1
+
+# Hardware Communication
+pyserial==3.5
+
+# Additional dependencies for stability
+requests==2.31.0
+matplotlib==3.7.3
