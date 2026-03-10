@@ -462,9 +462,11 @@ Cyber-Physical Systems, Machine Learning, Automated Quality Control, Real-Time D
 
 This project is open-source and free to use for educational and research purposes.
 
+**Status**: Production Ready  
+**Category**: Cyber-Physical Systems, Industrial Automation, Quality Control
+
 ## 👨‍💻 Author
 **Suman R N**  
 📧 Contact: sumansurn@gmail.com 
 🔗 LinkedIn: https://www.linkedin.com/in/suman-r-1b5260335 
-**Status**: Production Ready  
-**Category**: Cyber-Physical Systems, Industrial Automation, Quality Control
+
