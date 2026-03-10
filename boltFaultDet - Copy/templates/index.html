@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔩 Bolt Fault Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .image-container {
+            max-height: 400px;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        .image-container img {
+            width: 100%;
+            height: auto;
+        }
+        .counter-card {
+            text-align: center;
+            padding: 20px;
+        }
+        .counter-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .loading {
+            display: none;
+        }
+        .prediction-result {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .prediction-good {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .prediction-defective {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .prediction-none {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-bolt"></i> Bolt Fault Detection System
+                </h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Controls Panel -->
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-cog"></i> Controls</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Camera Selection -->
+                        <div class="mb-3">
+                            <label for="cameraSelect" class="form-label">
+                                <i class="fas fa-camera"></i> Select Camera
+                            </label>
+                            <select class="form-select" id="cameraSelect">
+                                {% for camera in cameras %}
+                                <option value="{{ camera }}">Camera {{ camera }}</option>
+                                {% endfor %}
+                                {% if not cameras %}
+                                <option value="0">Camera 0 (Default)</option>
+                                <option value="1">Camera 1</option>
+                                {% endif %}
+                            </select>
+                        </div>
+
+                        <!-- Test Camera -->
+                        <button class="btn btn-outline-primary btn-sm mb-3 w-100" onclick="testCamera()">
+                            <i class="fas fa-check-circle"></i> Test Camera
+                        </button>
+
+                        <!-- Detection Mode -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-search"></i> Detection Mode
+                            </label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="mode" id="cameraMode" value="camera" checked>
+                                <label class="btn btn-outline-secondary" for="cameraMode">Camera</label>
+                                
+                                <input type="radio" class="btn-check" name="mode" id="uploadMode" value="upload">
+                                <label class="btn btn-outline-secondary" for="uploadMode">Upload</label>
+                            </div>
+                        </div>
+
+                        <!-- Camera Controls -->
+                        <div id="cameraControls">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-play"></i> Capture Mode
+                                </label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="captureMode" id="manualMode" value="manual" checked>
+                                    <label class="btn btn-outline-info" for="manualMode">Manual</label>
+                                    
+                                    <input type="radio" class="btn-check" name="captureMode" id="autoMode" value="auto">
+                                    <label class="btn btn-outline-success" for="autoMode">Auto</label>
+                                </div>
+                            </div>
+                            
+                            <!-- Manual Controls -->
+                            <div id="manualControls">
+                                <button class="btn btn-primary w-100 mb-2" onclick="captureFrame()">
+                                    <i class="fas fa-camera"></i> Capture & Detect
+                                </button>
+                            </div>
+                            
+                            <!-- Auto Controls -->
+                            <div id="autoControls" style="display: none;">
+                                <button class="btn btn-success w-100 mb-2" id="startAutoBtn" onclick="startAutoCapture()">
+                                    <i class="fas fa-play"></i> Start Auto Capture
+                                </button>
+                                <button class="btn btn-danger w-100 mb-2" id="stopAutoBtn" onclick="stopAutoCapture()" style="display: none;">
+                                    <i class="fas fa-stop"></i> Stop Auto Capture
+                                </button>
+                                <div id="autoStatus" class="text-center text-muted" style="display: none;">
+                                    <small><i class="fas fa-clock"></i> Continuous streaming active...</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Controls -->
+                        <div id="uploadControls" style="display: none;">
+                            <input type="file" class="form-control mb-2" id="imageUpload" accept="image/*">
+                            <button class="btn btn-primary w-100" onclick="uploadImage()">
+                                <i class="fas fa-upload"></i> Upload & Detect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Arduino Controls -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-microchip"></i> Arduino Control</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Arduino Port -->
+                        <div class="mb-3">
+                            <label for="arduinoPort" class="form-label">
+                                <i class="fas fa-usb"></i> COM Port
+                            </label>
+                            <select class="form-select form-select-sm" id="arduinoPort">
+                                <option value="COM3">COM3</option>
+                                <option value="COM4" selected>COM4</option>
+                                <option value="COM5">COM5</option>
+                                <option value="COM6">COM6</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Connection Status -->
+                        <div class="mb-3">
+                            <div id="arduinoStatus" class="alert alert-secondary py-2">
+                                <small><i class="fas fa-circle text-secondary"></i> Not Connected</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Connection Controls -->
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <button class="btn btn-success btn-sm w-100" onclick="connectArduino()">
+                                    <i class="fas fa-plug"></i> Connect
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-danger btn-sm w-100" onclick="disconnectArduino()">
+                                    <i class="fas fa-unlink"></i> Disconnect
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Enable/Disable -->
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="enableArduino" onchange="toggleArduino()">
+                            <label class="form-check-label" for="enableArduino">
+                                <small>Enable Arduino Signals</small>
+                            </label>
+                        </div>
+                        
+                        <!-- Test Controls -->
+                        <div class="row">
+                            <div class="col-6">
+                                <button class="btn btn-warning btn-sm w-100" onclick="testArduino('HIGH')">
+                                    Test HIGH
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-info btn-sm w-100" onclick="testArduino('LOW')">
+                                    Test LOW
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Counters -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-bar"></i> Detection Counters</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="counter-card text-primary">
+                                    <div class="counter-number" id="totalCount">0</div>
+                                    <small><strong>Total Bolts Detected</strong></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="counter-card text-success">
+                                    <div class="counter-number" id="goodCount">0</div>
+                                    <small>Good Bolts</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="counter-card text-danger">
+                                    <div class="counter-number" id="defectiveCount">0</div>
+                                    <small>Defective Bolts</small>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm w-100 mt-2" onclick="resetCounters()">
+                            <i class="fas fa-redo"></i> Reset Counters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9">
+                <!-- Status -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div id="statusMessage" class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Ready for detection. Select a camera or upload an image.
+                        </div>
+                        <div id="predictionResult" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Images -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-image"></i> Original Image</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="image-container" id="originalImageContainer">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="fas fa-image fa-3x mb-3"></i>
+                                        <p>No image captured yet</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-search"></i> Detection Result</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="image-container" id="processedImageContainer">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="fas fa-search fa-3x mb-3"></i>
+                                        <p>No detection performed yet</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Processing...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
